@@ -54,7 +54,7 @@ class App extends React.Component {
       .then(blogs =>
         this.setState({ blogs })
     )
- 
+
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
     if ( loggedUserJSON ) {
       const user = JSON.parse(loggedUserJSON)
@@ -79,14 +79,10 @@ class App extends React.Component {
         newBlogUrl: '',
         messu: 'Uusi blogi ' + this.state.newBlogTitle + ' tekijältä ' + this.state.newBlogAuthor + ' lisätty'
       })
-      //
-      // tälle pitäis ehkä tehdä jotain...
-      //
-      blogService
-      .getAll()
-      .then(blogs =>
-        this.setState({ blogs })
-      )
+
+      const kaikkiBlogit = await blogService.getAll()
+      this.setState( { blogs: kaikkiBlogit })
+
       setTimeout(() => { this.setState( { messu: null }) }, 5000)
     } catch ( error ) {
       this.setState({
@@ -138,14 +134,9 @@ class App extends React.Component {
         klikatunId: blogiKasittelyssa.id,
         messu: 'Blogista ' + blogiKasittelyssa.title + ' tykätty '
       })
-      //
-      // tälle pitäis ehkä tehdä jotain...
-      //
-      blogService
-      .getAll()
-      .then(blogs =>
-        this.setState({ blogs })
-      )
+
+      const kaikkiBlogit = await blogService.getAll()
+      this.setState( { blogs: kaikkiBlogit })
       setTimeout(() => { this.setState( { messu: null }) }, 5000)
 
     } catch (exception) {
@@ -163,15 +154,8 @@ class App extends React.Component {
 
       if (window.confirm("Poistetaanko blogi " + blogiKasittelyssa.title + " tekijältä " + blogiKasittelyssa.author)) {
         await blogService.poista(blogiKasittelyssa.id)
-
-        //
-        // tälle pitäis ehkä tehdä jotain...
-        //
-        blogService
-        .getAll()
-        .then(blogs =>
-          this.setState({ blogs })
-        )    
+        const kaikkiBlogit = await blogService.getAll()
+        this.setState( { blogs: kaikkiBlogit })
         
         this.setState({ 
           messu: blogiKasittelyssa.title + ' poistettu ' 
@@ -287,17 +271,20 @@ class App extends React.Component {
           loginForm() :
           <div>
             <p>{this.state.user.name} logged in <button onClick={this.loggauduUlos}> logOut </button> </p>
+
             <h2>Blogit</h2>
             <ul>
                 {sortautBlogit.map(blog => 
-                <ul key= {blog.id} onClick={ this.klikkaus } style={blogStyle}> 
+                <ul key={blog.id} onClick={this.klikkaus} style={blogStyle}> 
                   <Blog key={blog._id} blog={blog} />
                     {blog.title === this.state.mikaKlikattu ?
-                      lisaRivi(blog) : <div></div>
+                      lisaRivi(blog) : 
+                      <div></div>
                     }
                 </ul>
                 )}
-            </ul>             
+            </ul>
+                   
             {newBlogForm()}
           </div>        
         }         
