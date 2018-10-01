@@ -19,26 +19,30 @@ class App extends React.Component {
       username: '',
       password: '',
       user: null,
-      mikaKlikattu: ''
+      mikaKlikattu: '',
+      klikatunId: ''
     }
   }
   
   klikkaus = () => {
     var mikaTokatty = getSelection().baseNode.nodeValue
     const nimet = this.state.blogs.map(b => b.title)
-
-    console.log(mikaTokatty)
-
-
+    var iidee = ''
+    const nytKasittelyssa = this.state.blogs.find(x => x.title === mikaTokatty )
+    if (nytKasittelyssa) {
+      iidee = nytKasittelyssa.id
+    }
 
     if (nimet.includes(mikaTokatty)) {
       if (mikaTokatty === this.state.mikaKlikattu) {
         this.setState({
-          mikaKlikattu: ''
+          mikaKlikattu: '',
+          klikatunId: ''
         })       
       } else {
         this.setState({
-          mikaKlikattu: mikaTokatty
+          mikaKlikattu: mikaTokatty,
+          klikatunId: iidee
         }) 
       }
     }
@@ -67,25 +71,28 @@ class App extends React.Component {
         author: this.state.newBlogAuthor,
         url: this.state.newBlogUrl
       }
-
       const newBlog = await blogService.create(blogObject)
-
-      this.setState({ messu: 'Uusi blogi ' + this.state.newBlogTitle + ' tekijältä ' + this.state.newBlogAuthor + ' lisätty' })
-      setTimeout(() => { this.setState( { messu: null }) }, 5000)
-
       this.setState({
         blogs: this.state.blogs.concat(newBlog),
         newBlogTitle: '',
         newBlogAuthor: '',
-        newBlogUrl: ''
-      })      
+        newBlogUrl: '',
+        messu: 'Uusi blogi ' + this.state.newBlogTitle + ' tekijältä ' + this.state.newBlogAuthor + ' lisätty'
+      })
+      //
+      // tälle pitäis ehkä tehdä jotain...
+      //
+      blogService
+      .getAll()
+      .then(blogs =>
+        this.setState({ blogs })
+      )
+      setTimeout(() => { this.setState( { messu: null }) }, 5000)
     } catch ( error ) {
       this.setState({
         error: 'Blogin lisäys ei onnistunut',
       })
-      setTimeout(() => {
-        this.setState({ error: null })
-      }, 5000)      
+      setTimeout(() => { this.setState({ error: null }) }, 5000)     
     }
   }
 
@@ -104,10 +111,79 @@ class App extends React.Component {
       this.setState({
         error: 'käyttäjätunnus tai salasana virheellinen',
       })
-      setTimeout(() => {
-        this.setState({ error: null })
-      }, 5000)
+      setTimeout(() => { this.setState({ error: null }) }, 5000)
     }
+  }
+  
+  liketetty = async (event) => {
+    event.preventDefault()
+    try {
+      const blogiKasittelyssa = await blogService.getOne(this.state.klikatunId)
+      const uudetLiket = blogiKasittelyssa.likes + 1
+
+      const blogObject = {
+        author: blogiKasittelyssa.author,
+        user: blogiKasittelyssa.user,
+        id: blogiKasittelyssa.id,
+        likes: uudetLiket,
+        title: blogiKasittelyssa.title,
+        url: blogiKasittelyssa.url
+      }
+      
+      await blogService.update(blogiKasittelyssa.id, blogObject)
+      const blogs = this.state.blogs.filter(n => n.id !== blogiKasittelyssa.id)
+      this.setState({
+        blogs: blogs.concat(blogObject),
+        mikaKlikattu: blogiKasittelyssa.title,
+        klikatunId: blogiKasittelyssa.id,
+        messu: 'Blogista ' + blogiKasittelyssa.title + ' tykätty '
+      })
+      //
+      // tälle pitäis ehkä tehdä jotain...
+      //
+      blogService
+      .getAll()
+      .then(blogs =>
+        this.setState({ blogs })
+      )
+      setTimeout(() => { this.setState( { messu: null }) }, 5000)
+
+    } catch (exception) {
+      this.setState({
+        error: 'liketys epäonnistui',
+      })
+      setTimeout(() => { this.setState({ error: null }) }, 5000)
+    }
+  }
+
+  poista = async (event) => {
+    event.preventDefault()
+    try {
+      const blogiKasittelyssa = await blogService.getOne(this.state.klikatunId)
+
+      if (window.confirm("Poistetaanko blogi " + blogiKasittelyssa.title + " tekijältä " + blogiKasittelyssa.author)) {
+        await blogService.poista(blogiKasittelyssa.id)
+
+        //
+        // tälle pitäis ehkä tehdä jotain...
+        //
+        blogService
+        .getAll()
+        .then(blogs =>
+          this.setState({ blogs })
+        )    
+        
+        this.setState({ 
+          messu: blogiKasittelyssa.title + ' poistettu ' 
+        })
+        setTimeout(() => { this.setState( { messu: null }) }, 5000)
+      }
+    } catch (exception) {
+      this.setState({
+        error: 'poisto epäonnistui',
+      })
+      setTimeout(() => { this.setState({ error: null }) }, 5000)
+    }    
   }
 
   handleNewBlogFieldChange = (event) => {  
@@ -132,6 +208,8 @@ class App extends React.Component {
       borderWidth: 1,
       marginBottom: 5
     }
+
+    const sortautBlogit = this.state.blogs.sort(function(a, b){return a.likes - b.likes})
 
     const loginForm = () => (
       <div>
@@ -173,15 +251,29 @@ class App extends React.Component {
         />
       </Togglable>
     )
+
+    const poistoNappiNaytolleVaiEi = (juuseri) => {
+      if (juuseri === null) {
+      return <ul> <button name="poistoNappi" onClick={this.poista} > poista </button></ul>
+      }
+      if (juuseri.name === this.state.user.name) {
+        return <ul> <button name="poistoNappi" onClick={this.poista} > poista </button></ul>  
+      } else {
+        return <ul></ul>
+      }
+    }
+    
     const lisaRivi = (blog) => (
       <div>
           <ul> {blog.url} </ul>
-          <ul> {blog.likes} likes <button name="likeNappi" onClick={console.log('klikattu likeNappia')} >like</button></ul>
-          {blog.user !== undefined ? 
-            <ul> Added by {blog.user.name}</ul> : <ul>Added by UNKNOWN</ul>
+          <ul> {blog.likes} likes <button name="likeNappi" onClick={this.liketetty} >like</button></ul>
+          {blog.user !== null ? 
+            <ul> Added by {blog.user.name} </ul> : <ul> Added by UNKNOWN </ul>
           }
+          { poistoNappiNaytolleVaiEi(blog.user) }          
       </div>
     )
+
     return (      
       <div>
         <h1>Herra Hakkaraisen blogisivut</h1>
@@ -197,7 +289,7 @@ class App extends React.Component {
             <p>{this.state.user.name} logged in <button onClick={this.loggauduUlos}> logOut </button> </p>
             <h2>Blogit</h2>
             <ul>
-                {this.state.blogs.map(blog => 
+                {sortautBlogit.map(blog => 
                 <ul key= {blog.id} onClick={ this.klikkaus } style={blogStyle}> 
                   <Blog key={blog._id} blog={blog} />
                     {blog.title === this.state.mikaKlikattu ?
