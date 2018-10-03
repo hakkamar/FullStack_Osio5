@@ -20,6 +20,8 @@
   },
   "proxy": "http://localhost:3001",
   "devDependencies": {
+    "enzyme": "^3.6.0",
+    "enzyme-adapter-react-16": "^1.5.0",
     "eslint": "^5.6.1"
   }
 }
