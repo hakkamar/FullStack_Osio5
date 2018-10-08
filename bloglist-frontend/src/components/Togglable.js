@@ -25,7 +25,7 @@ class Togglable extends React.Component {
         <div style={hideWhenVisible}>
           <button onClick={this.toggleVisibility}>{this.props.buttonLabel}</button>
         </div>
-        <div style={showWhenVisible}>
+        <div style={showWhenVisible} className="togglableContent">
           {this.props.children}
           <button onClick={this.toggleVisibility}>Piilota lisäyslomake</button>
         </div>

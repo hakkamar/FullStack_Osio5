@@ -4,6 +4,7 @@ import blogService from './services/blogs'
 import Notification from './components/Notification'
 import Togglable from './components/Togglable'
 import NewBlogForm from './components/NewBlogForm'
+import LoginForm from './components/LoginForm'
 import loginService from './services/login'
 
 class App extends React.Component {
@@ -65,30 +66,35 @@ class App extends React.Component {
 
   addBlog = async (event) => {
     event.preventDefault()
-    try {
-      const blogObject = {
-        title: this.state.newBlogTitle,
-        author: this.state.newBlogAuthor,
-        url: this.state.newBlogUrl
+    if (this.state.newBlogTitle === '' || this.state.newBlogAuthor === '' || this.state.newBlogUrl === '') {
+      this.setState({ messu: 'Anna kaikki tiedot uudesta Blogista' })
+      setTimeout(() => { this.setState({ messu: null }) }, 5000)
+    } else {
+      try {
+        const blogObject = {
+          title: this.state.newBlogTitle,
+          author: this.state.newBlogAuthor,
+          url: this.state.newBlogUrl
+        }
+        const newBlog = await blogService.create(blogObject)
+        this.setState({
+          blogs: this.state.blogs.concat(newBlog),
+          newBlogTitle: '',
+          newBlogAuthor: '',
+          newBlogUrl: '',
+          messu: 'Uusi blogi ' + this.state.newBlogTitle + ' tekijältä ' + this.state.newBlogAuthor + ' lisätty'
+        })
+  
+        const kaikkiBlogit = await blogService.getAll()
+        this.setState( { blogs: kaikkiBlogit })
+  
+        setTimeout(() => { this.setState( { messu: null }) }, 5000)
+      } catch ( error ) {
+        this.setState({
+          error: 'Blogin lisäys ei onnistunut',
+        })
+        setTimeout(() => { this.setState({ error: null }) }, 5000)     
       }
-      const newBlog = await blogService.create(blogObject)
-      this.setState({
-        blogs: this.state.blogs.concat(newBlog),
-        newBlogTitle: '',
-        newBlogAuthor: '',
-        newBlogUrl: '',
-        messu: 'Uusi blogi ' + this.state.newBlogTitle + ' tekijältä ' + this.state.newBlogAuthor + ' lisätty'
-      })
-
-      const kaikkiBlogit = await blogService.getAll()
-      this.setState( { blogs: kaikkiBlogit })
-
-      setTimeout(() => { this.setState( { messu: null }) }, 5000)
-    } catch ( error ) {
-      this.setState({
-        error: 'Blogin lisäys ei onnistunut',
-      })
-      setTimeout(() => { this.setState({ error: null }) }, 5000)     
     }
   }
 
@@ -196,31 +202,12 @@ class App extends React.Component {
     const sortautBlogit = this.state.blogs.sort(function(a, b){return a.likes - b.likes})
 
     const loginForm = () => (
-      <div>
-        <h2>Kirjaudu</h2>
-  
-        <form onSubmit={this.login}>
-          <div>
-            käyttäjätunnus
-            <input
-              type="text"
-              name="username"
-              value={this.state.username}
-              onChange={this.handleLoginFieldChange}
-            />
-          </div>
-          <div>
-            salasana
-            <input
-              type="password"
-              name="password"
-              value={this.state.password}
-              onChange={this.handleLoginFieldChange}
-            />
-          </div>
-          <button>kirjaudu</button>
-        </form>
-      </div>
+      <LoginForm
+        username={this.state.username}
+        password={this.state.password}
+        handleChange={this.handleLoginFieldChange}
+        handleSubmit={this.login}
+      />
     )
 
     const newBlogForm = () => (
@@ -248,7 +235,7 @@ class App extends React.Component {
     }
     
     const lisaRivi = (blog) => (
-      <div>
+      <div className="lisaDiv">
           <ul> {blog.url} </ul>
           <ul> {blog.likes} likes <button name="likeNappi" onClick={this.liketetty} >like</button></ul>
           {blog.user !== null ? 
@@ -273,9 +260,9 @@ class App extends React.Component {
             <p>{this.state.user.name} logged in <button onClick={this.loggauduUlos}> logOut </button> </p>
 
             <h2>Blogit</h2>
-            <ul>
+            <ul className="kaikkiBlogit">
                 {sortautBlogit.map(blog => 
-                <ul key={blog.id} onClick={this.klikkaus} style={blogStyle}> 
+                <ul key={blog.id} onClick={this.klikkaus} style={blogStyle} className="riviDiv"> 
                   <Blog key={blog._id} blog={blog} />
                     {blog.title === this.state.mikaKlikattu ?
                       lisaRivi(blog) : 
