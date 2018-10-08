@@ -246,7 +246,7 @@ class App extends React.Component {
     )
 
     return (      
-      <div>
+      <div className="kokoSivu">
         <h1>Herra Hakkaraisen blogisivut</h1>
 
          {this.state.error !== null ?
