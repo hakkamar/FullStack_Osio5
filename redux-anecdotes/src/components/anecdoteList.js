@@ -1,7 +1,8 @@
 import React from 'react'
 import actionFor from './actionCreators'
+import Anecdote from './anecdote'
 
-class AnecdoteList extends React.Component {     
+class AnecdoteList extends React.Component {
   aanesta = (id) => () => {
     this.props.store.dispatch(
       actionFor.lisaaAani(id)
@@ -14,14 +15,12 @@ class AnecdoteList extends React.Component {
     return( 
       <ul>
         {anecdotes.map( anecdote =>
-        <div key={anecdote.id}>
-          <div> {anecdote.content} </div>
-          <div>
-            has {anecdote.votes}
-            <button key={anecdote.id} onClick={this.aanesta(anecdote.id)}>vote</button>
-          </div>
-      </div>
-      )}
+          <Anecdote
+            key={anecdote.id}
+            anecdote={anecdote}
+            handleClick={this.aanesta(anecdote.id)}
+          />
+        )}
       </ul>
     )
   }
